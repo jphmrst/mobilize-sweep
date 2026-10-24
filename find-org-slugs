@@ -8,16 +8,13 @@ use Time::Local qw(timegm);
 use Getopt::Long;
 
 ### The Mobilize codes of the campaigns to follow.
-my @targetCampaigns = qw(
-  ilhanomar cedrickfrazier keithellison mnforklobuchar
-  peggyflanaganforminnesota dfl mohamed-for-mn-senatedfl
-  fordformnsenatedfl dflcc
-    );
-
-my $noComments = 0;
+my @targetCampaigns = qw();   # Slugs to look up.
+my $mobilizeCallPause = 1.3;  # Seconds between calls to Mobilize.
+my $noComments = 0;           # Suppress generation of Perl comments.
 
 GetOptions(
   "slug=s" => \@targetCampaigns,
+  "mobilize-call-pause=f" => \$mobilizeCallPause,
   "no-comments" => \$noComments
     );
 
@@ -43,7 +40,7 @@ my %campaignId = (); {
 
    # print "$orgsUrl\n";
    my $response = $ua->get($orgsUrl);
-   sleep(1.3); # To avoid triggering the rate limit.
+   sleep($mobilizeCallPause); # To avoid triggering the rate limit.
 
    if ($response->is_success) {
      # Use decoded_content to properly handle character encodings
