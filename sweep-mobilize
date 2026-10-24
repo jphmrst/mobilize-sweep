@@ -1,0 +1,165 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use LWP::Simple qw(get);
+use LWP::UserAgent;
+use JSON::PP;
+use Time::HiRes qw( sleep );
+use Time::Local qw(timegm);
+use Getopt::Long;
+
+## Mobilize API docs --- https://github.com/mobilizeamerica/api
+
+## Mobilize API call --- get Ilhan's event only
+##
+## https://api.mobilize.us/v1/organizations/2754/events?timeslot_start=gte_now&per_page=100&organization_id=2754
+##
+## Ilhan's org ID is 2754; note where the ID is repeated both in the
+## path, and in an argument.
+
+my %campaignId = ();          # For the Mobilize codes of the
+                              # campaigns we follow.
+
+my $mobilizeCallPause = 1.0;  # Seconds between calls to Mobilize.
+
+my @ignoreIDs = ();           # Event IDs to ignore.
+
+my @allowNotFound = ();       # IDs OK to have on the calendar even
+                              # though we do not expect to find them
+                              # on Mobilize.
+
+my $sourceFile;               # Local text file where we look for
+                              # Mobilize URLs.
+
+my $defaultHeadline = "(no header)";  # Default string denoting the
+                                      # initial section of links,
+                                      # above the first headline found
+                                      # in the file.
+
+my $eventLinkRegex = "href=\"https://(www\\.)?mobilize\\.us/(?<org>[^/]+)/event/(?<id>[0-9]+)/?\"";
+# Regular expression (suitably quoted) for links to Mobilize events in
+# the source file.  Should give the slug of the event creator the name
+# "org", and ID of the event the name "id".
+
+my $sectionHeaderRegex = "^(?<header>[A-Za-z]+day,.*)\$";
+# Regular expression (suitably quoted) for section headers in the
+# source file.  Should give the text of the header the name "header".
+
+my $cronMode = 0; # Cron mode suppresses progress and non-error
+                  # output, showing only issues.  Useful for
+                  # situations where non-empty output will trigger an
+                  # email.
+
+GetOptions(
+  "source=s" => \$sourceFile,
+  "mobilize=s" => \%campaignId,
+  "mobilize-call-pause=f" => \$mobilizeCallPause,
+  "ignore-event=s" => \@ignoreIDs,
+  "allow-calendar-event=s" => \@allowNotFound,
+  "default-section-header=s" => \$defaultHeadline,
+  "mobilize-link-regex=s" => \$eventLinkRegex,
+  "section-header-regex=s" => \$sectionHeaderRegex,
+  "cron-mode" => \$cronMode
+    );
+
+die "Must provide a --source file" unless -e $sourceFile;
+die "--source file not readable"   unless -r $sourceFile;
+
+### Create user agent
+my $ua = LWP::UserAgent->new;
+$ua->agent("PerlAPIClient/1.0");
+
+### Process event IDs to ignore
+my %ignoreID = ();
+foreach my $id (@ignoreIDs) {
+  $ignoreID{$id} = 1;
+}
+
+### Process IDs OK to have on the calendar even though we do not
+### expect to find them on Mobilize.
+my %allowNotFounds = ();
+foreach my $id (@allowNotFound) {
+  $allowNotFounds{$id} = 1;
+}
+
+### Sweep through $sourceFile for the events we already have
+my %knownEvents = ();
+my %campaignEvents = ();
+my %unlisted = ();
+open CAL, "<$sourceFile";
+my $dateline = $defaultHeadline;
+while ($_ = <CAL>) {
+  if (m|$eventLinkRegex|) {
+    my $org = $+{org};
+    my $id = $+{id};
+    $knownEvents{$id} = $org;
+    $campaignEvents{$org} = []  unless defined $campaignEvents{$org};
+    push @{$campaignEvents{$org}}, $id;
+    $unlisted{$id}{org} = $org;
+    push @{$unlisted{$id}{date}}, $dateline;
+  } elsif (/$sectionHeaderRegex/) {
+    $dateline = $+{header};
+  }
+}
+close CAL;
+
+### Go through each target campaign to find interesting URLs.
+my %reported = ();
+my %unknownEvents = ();
+foreach my $campaign (keys %campaignId) {
+  print "Campaign $campaign --- "  unless $cronMode;
+  my $id = $campaignId{$campaign};
+  my $url = "https://api.mobilize.us/v1/organizations/$id/events?timeslot_start=gte_now&per_page=100&organization_id=$id";
+
+  my $loaded = 0;
+  while (defined $url) {
+    # Fetch the HTML source code
+    my $response = $ua->get($url);
+    sleep($mobilizeCallPause);
+
+    if ($response->is_success) {
+      my $json_text = $response->decoded_content;
+      my $result = decode_json($json_text);
+      $url = $result->{next};
+      my $records = $result->{data};
+      $loaded += 1+$#{$records};
+    FOUND:
+      foreach my $rec (@$records) {
+        my $eventId = $rec->{id};
+        $reported{$eventId} = 1;
+        delete $unlisted{$eventId};
+        # print "- https://mobilize.us/$campaign/event/$eventId/\n";
+        next FOUND if $ignoreID{$eventId} || $knownEvents{$eventId};
+        $unknownEvents{$eventId}{title} = $rec->{title};
+        $unknownEvents{$eventId}{org} = $campaign;
+    }
+    } else {
+      $url = undef;
+    }
+  }
+  print "loaded $loaded event", ($loaded == 1 ? "" : "s"), "\n"
+      unless $cronMode;
+}
+
+if (%unknownEvents > 0) {
+  print "\nActive on Mobilize but not on calendar:\n";
+  foreach my $event (keys %unknownEvents) {
+    my $org = $unknownEvents{$event}{org};
+    my $title = $unknownEvents{$event}{title};
+    print "- https://mobilize.us/$org/event/$event/\t$title\n";
+  }
+} else {
+  print "\nAll active Mobilize events addressed.\n"  unless $cronMode;
+}
+
+if (%unlisted > 0) {
+  print "\nIn calendar but not returned from Mobilize:\n";
+  foreach my $event (keys %unlisted) {
+  my $org = $unlisted{$event}{org};
+  my $dates = $unlisted{$event}{date};
+  print "- https://mobilize.us/$org/event/$event/\t[", join("; ", @$dates), "]\n";
+  }
+} else {
+  print "\nNo calendar events with suspected broken links.\n"
+      unless $cronMode;
+}
