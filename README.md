@@ -61,11 +61,11 @@ both
   if such a link is found prior to any section header.  The default
   value is `(no header)`.
 
-- `--mobilize-link-regex`
+- `--mobilize-link-regex=REGEX`
 
   This argument specifies a (suitably quoted) Perl regular expression
   for finding links to Mobilize events in the local calendar file.
-  The expression should use the Perl named substring capture
+  This regex should use the Perl named substring capture
   `(?<NAME>PATTERN)` to match and name two components of a Mobilize
   event URL,
   
@@ -73,11 +73,26 @@ both
    
    2. The numeric ID of the event, given the name `id`.
 
-  The default value for `--mobilize-link-regex` is ```href=\"https://(www\\.)?mobilize\\.us/(?<org>[^/]+)/event/(?<id>[0-9]+)/?\"```
+  The default value for `--mobilize-link-regex` is 
+  
+    `href=\"https://(www\\.)?mobilize\\.us/(?<org>[^/]+)/event/(?<id>[0-9]+)/?\"`
 
-- `--section-header-regex`
+- `--section-header-regex=REGEX`
+
+  This argument specifies a (suitably quoted) Perl regular expression
+  for finding section headers in the local calendar file.  This regex
+  should use the Perl named substring capture `(?<NAME>PATTERN)` to
+  match the text of the section header, and should name it `header`.
+  The default value for `--mobilize-link-regex` is
+  
+    `^(?<header>[A-Za-z]+day,.*)\$`
 
 - `--cron-mode`
+
+  Utilities such as `cron` can be configured to generate emails or
+  other alerts for non-empty program output.  So "cron mode"
+  suppresses progress messages and other non-error output, showing
+  only issues requiring attention.  By default, cron mode is disabled.
 
 ## The `find-org-slugs` script
 
