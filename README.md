@@ -16,21 +16,64 @@ both
    
 ### Required command-line arguments
 
-- `--source`
+- `--source=PATH`
 
-- `--mobilize`
+  Path to a local text file holding a calendar where we look for
+  Mobilize URLs.  Exactly one value must be provided with this option.
+
+- `--mobilize SLUG=ID`
+
+  Specifies a pair of values for each Mobilize organization whose
+  events are to be tracked.  This argument may appear multiple times
+  (but unless at least one instance is given, the script will do no
+  useful work).
 
 ### Optional command-line arguments
 
-- `--mobilize-call-pause`
+- `--mobilize-call-pause=VALUE`
 
-- `--ignore-event`
+  Minimum number of seconds between calls to the Mobilize API.
+  Mobilize does implement rate limits, and the script will fail if you
+  hit them.  The script uses millisecond time via, so
+  `--mobilize-call-pause` expects a floating-point value.  The default
+  value is `1.0`.
 
-- `--allow-calendar-event`
+- `--ignore-event=ID`
 
-- `--default-section-header`
+  Specifies the numeric Mobilize ID of an event which should not
+  trigger a report when it appears in an organization's event list,
+  but not in the local calendar.  This argument may be given multiple
+  times.
+
+- `--allow-calendar-event=ID`
+
+  Specifies the numeric Mobilize ID of an event which should not
+  trigger a report when it appears in the local calendar, but not in
+  any organization's event list.  This argument may be given multiple
+  times.
+
+- `--default-section-header=TEXT`
+
+  This script will attempt to identify the section of the calendar
+  file in which links appear.  In particular, it cites the section
+  title when reporting IDs which appear in the calendar file but not a
+  Mobilize list.  This argument specifies the text which will be used
+  if such a link is found prior to any section header.  The default
+  value is `(no header)`.
 
 - `--mobilize-link-regex`
+
+  This argument specifies a (suitably quoted) Perl regular expression
+  for finding links to Mobilize events in the local calendar file.
+  The expression should use the Perl named substring capture
+  `(?<NAME>PATTERN)` to match and name two components of a Mobilize
+  event URL,
+  
+   1. An organization's slug, given the name `org`, and
+   
+   2. The numeric ID of the event, given the name `id`.
+
+  The default value for `--mobilize-link-regex` is ```href=\"https://(www\\.)?mobilize\\.us/(?<org>[^/]+)/event/(?<id>[0-9]+)/?\"```
 
 - `--section-header-regex`
 
