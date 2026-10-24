@@ -75,7 +75,9 @@ both
 
   The default value for `--mobilize-link-regex` is 
   
-    `href=\"https://(www\\.)?mobilize\\.us/(?<org>[^/]+)/event/(?<id>[0-9]+)/?\"`
+    ```
+	href=\"https://(www\\.)?mobilize\\.us/(?<org>[^/]+)/event/(?<id>[0-9]+)/?\"
+	```
 
 - `--section-header-regex=REGEX`
 
@@ -85,7 +87,9 @@ both
   match the text of the section header, and should name it `header`.
   The default value for `--mobilize-link-regex` is
   
-    `^(?<header>[A-Za-z]+day,.*)\$`
+    ```
+	^(?<header>[A-Za-z]+day,.*)\$
+	```
 
 - `--cron-mode`
 
@@ -94,14 +98,40 @@ both
   suppresses progress messages and other non-error output, showing
   only issues requiring attention.  By default, cron mode is disabled.
 
+### Example
+
+```
+	./Mobilize/sweep-mobilize \
+		--source=cal.org \
+		--mobilize dfl=617 \
+		--mobilize ilhanomar=2754 \
+		--mobilize keithellison=13798 \
+		--mobilize mohamedf-mn-senatedfl=30622 \
+		--mobilize mnforklobuchar=38826 \
+		--mobilize cedrickfrazier=45921 \
+		--mobilize dflcc=48880 \
+		--mobilize fordformnsenatedfl=50741 \
+		--mobilize peggyflanaganforminnesota=4113 \
+		--ignore-event=1025420 --ignore-event=1073034 \
+		--ignore-event=1055205 --ignore-event=1053514 \
+		--ignore-event=1073750
+```
+
 ## The `find-org-slugs` script
 
 This script finds the ID numbers corresponding to Mobilize slugs.
 This search is helpful for setting up a call to `sweep-mobilize`, and
 accepts the following arguments:
 
-- `--slug`
+- `--slug=NAME`
 
-- `--mobilize-call-pause`
+  Gives the name of the slug of a Mobilize organization whose numeric
+  ID we need.  This argument may be given multiple times.
+
+- `--mobilize-call-pause=VALUE`
+
+  See the documentation above of this argument for `sweep-mobilize`
 
 - `--no-comments`
+
+  Suppresses some of the output which might be considered extraneous.
