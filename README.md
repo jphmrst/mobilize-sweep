@@ -101,20 +101,16 @@ both
 ### Example
 
 ```
-	./Mobilize/sweep-mobilize \
-		--source=cal.org \
-		--mobilize dfl=617 \
-		--mobilize ilhanomar=2754 \
-		--mobilize keithellison=13798 \
-		--mobilize mohamedf-mn-senatedfl=30622 \
-		--mobilize mnforklobuchar=38826 \
-		--mobilize cedrickfrazier=45921 \
-		--mobilize dflcc=48880 \
-		--mobilize fordformnsenatedfl=50741 \
-		--mobilize peggyflanaganforminnesota=4113 \
-		--ignore-event=1025420 --ignore-event=1073034 \
-		--ignore-event=1055205 --ignore-event=1053514 \
-		--ignore-event=1073750
+sweep-mobilize \
+	--source=cal.org \
+	--mobilize dfl=617 \
+	--mobilize ilhanomar=2754 \
+	--mobilize keithellison=13798 \
+	--mobilize mnforklobuchar=38826 \
+	--mobilize peggyflanaganforminnesota=4113 \
+	--ignore-event=1025420 --ignore-event=1073034 \
+	--ignore-event=1055205 --ignore-event=1053514 \
+	--ignore-event=1073750
 ```
 
 ### Plans and wishes
