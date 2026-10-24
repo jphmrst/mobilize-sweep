@@ -1,0 +1,84 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use LWP::UserAgent;
+use JSON::PP;
+use Time::HiRes qw(sleep);
+use Time::Local qw(timegm);
+use Getopt::Long;
+
+### The Mobilize codes of the campaigns to follow.
+my @targetCampaigns = qw(
+  ilhanomar cedrickfrazier keithellison mnforklobuchar
+  peggyflanaganforminnesota dfl mohamed-for-mn-senatedfl
+  fordformnsenatedfl dflcc
+    );
+
+my $noComments = 0;
+
+GetOptions(
+  "slug=s" => \@targetCampaigns,
+  "no-comments" => \$noComments
+    );
+
+### Create user agent
+my $ua = LWP::UserAgent->new;
+$ua->agent("PerlAPIClient/1.0");
+
+### ---------------------------------------------------------------
+### Find the IDs of the target campaigns.
+
+my %campaignId = (); {
+  my %keysToFind = ();
+  foreach my $targ (@targetCampaigns) {
+    $keysToFind{$targ} = 1;
+  }
+  my $toFind = keys %keysToFind;
+
+  my $startDate = timegm(0, 0, 0, 1, 3, 126);
+  my $orgsUrl = "https://api.mobilize.us/v1/organizations?updated_since=$startDate";
+
+  my $x = 0;
+ FIND_ORGS: while ($toFind > 0) {
+
+   # print "$orgsUrl\n";
+   my $response = $ua->get($orgsUrl);
+   sleep(1.3); # To avoid triggering the rate limit.
+
+   if ($response->is_success) {
+     # Use decoded_content to properly handle character encodings
+     # (like UTF-8)
+     my $json_text = $response->decoded_content;
+
+     my $result = decode_json($json_text);
+     $orgsUrl = $result->{next};
+     my $records = $result->{data};
+
+     foreach my $rec (@$records) {
+       my $slug = $rec->{slug};
+       my $id = $rec->{id};
+
+       if ($keysToFind{$slug}) {
+         $campaignId{$slug} = $id;
+         delete $keysToFind{$slug};
+         $toFind -= 1;
+         print "  ";
+         print "'"  unless $slug =~ /^[A-Za-z]+$/;
+         print $slug;
+         print "'"  unless $slug =~ /^[A-Za-z]+$/;
+         print " => $id,";
+         print " # $toFind to go"  unless $noComments;
+         print "\n";
+         last FIND_ORGS unless $toFind>0;
+       }
+     }
+
+   } else {
+     # Handle HTTP error
+     die "HTTP GET error for \"$orgsUrl: "
+         . $response->code . " - " . $response->message . "\n";
+   }
+ }
+}
+
+exit 0;
