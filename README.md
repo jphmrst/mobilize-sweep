@@ -117,6 +117,13 @@ both
 		--ignore-event=1073750
 ```
 
+### Plans and wishes
+
+- Might be nice to have it scan a Google calendar rather than a text
+  file.
+
+Bug reports and PRs gratefully received!
+
 ## The `find-org-slugs` script
 
 This script finds the ID numbers corresponding to Mobilize slugs.
@@ -135,3 +142,4 @@ accepts the following arguments:
 - `--no-comments`
 
   Suppresses some of the output which might be considered extraneous.
+
