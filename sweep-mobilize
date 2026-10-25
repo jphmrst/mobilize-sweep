@@ -31,14 +31,9 @@ use Time::HiRes qw( sleep );
 use Time::Local qw(timegm);
 use Getopt::Long;
 
-## Mobilize API docs --- https://github.com/mobilizeamerica/api
+our $VERSION = 'v0.1.0';
 
-## Mobilize API call --- get Ilhan's event only
-##
-## https://api.mobilize.us/v1/organizations/2754/events?timeslot_start=gte_now&per_page=100&organization_id=2754
-##
-## Ilhan's org ID is 2754; note where the ID is repeated both in the
-## path, and in an argument.
+# =====================================================================
 
 my %campaignId = ();          # For the Mobilize codes of the
                               # campaigns we follow.
