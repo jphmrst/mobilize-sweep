@@ -32,6 +32,7 @@ use Time::Local qw(timegm);
 use Getopt::Long;
 
 our $VERSION = 'v0.1.0';
+$| = 1; # Immediately flush STDOUT
 
 # =====================================================================
 
@@ -110,8 +111,10 @@ while ($_ = <CAL>) {
     $knownEvents{$id} = $org;
     $campaignEvents{$org} = []  unless defined $campaignEvents{$org};
     push @{$campaignEvents{$org}}, $id;
-    $unlisted{$id}{org} = $org;
-    push @{$unlisted{$id}{date}}, $dateline;
+    if (!$allowNotFounds{$id}) {
+      $unlisted{$id}{org} = $org;
+      push @{$unlisted{$id}{date}}, $dateline;
+    }
   } elsif (/$sectionHeaderRegex/) {
     $dateline = $+{header};
   }
@@ -147,7 +150,7 @@ foreach my $campaign (keys %campaignId) {
         next FOUND if $ignoreID{$eventId} || $knownEvents{$eventId};
         $unknownEvents{$eventId}{title} = $rec->{title};
         $unknownEvents{$eventId}{org} = $campaign;
-    }
+      }
     } else {
       $url = undef;
     }
@@ -172,7 +175,8 @@ if (%unlisted > 0) {
   foreach my $event (keys %unlisted) {
     my $org = $unlisted{$event}{org};
     my $dates = $unlisted{$event}{date};
-    print "- https://mobilize.us/$org/event/$event/\t[", join("; ", @$dates), "]\n";
+    print "- https://mobilize.us/$org/event/$event/\t[",
+        join("; ", @$dates), "]\n";
   }
 } else {
   print "\nNo calendar events with suspected broken links.\n"
