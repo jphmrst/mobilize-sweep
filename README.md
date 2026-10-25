@@ -91,12 +91,17 @@ both
 	^(?<header>[A-Za-z]+day,.*)\$
 	```
 
-- `--cron-mode`
+- `--verbose=NUM`
 
-  Utilities such as `cron` can be configured to generate emails or
-  other alerts for non-empty program output.  So "cron mode"
-  suppresses progress messages and other non-error output, showing
-  only issues requiring attention.  By default, cron mode is disabled.
+  Set the level of detail in the program's output.  `NUM` should be an
+  integer value of zero or higher.
+  - The default value is `1`.
+  - A value of `0` is useful for utilities such as `cron` which can be
+    configured to generate emails or other alerts for non-empty
+    program output.  So verbosity `0` suppresses progress messages and
+    other non-error output, showing only issues requiring attention.
+  - Values of `4` or higher include information typically associated
+    with debugging.
 
 ### Example
 
