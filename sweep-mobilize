@@ -63,10 +63,7 @@ my $sectionHeaderRegex = "^(?<header>[A-Za-z]+day,.*)\$";
 # Regular expression (suitably quoted) for section headers in the
 # source file.  Should give the text of the header the name "header".
 
-my $cronMode = 0; # Cron mode suppresses progress and non-error
-                  # output, showing only issues.  Useful for
-                  # situations where non-empty output will trigger an
-                  # email.
+my $verbose = 1; # Set the level of output detail.
 
 GetOptions(
   "source=s" => \$sourceFile,
@@ -77,7 +74,7 @@ GetOptions(
   "default-section-header=s" => \$defaultHeadline,
   "mobilize-link-regex=s" => \$eventLinkRegex,
   "section-header-regex=s" => \$sectionHeaderRegex,
-  "cron-mode" => \$cronMode
+  "verbose=i" => \$verbose
     );
 
 die "Must provide a --source file" unless -e $sourceFile;
@@ -125,7 +122,7 @@ close CAL;
 my %reported = ();
 my %unknownEvents = ();
 foreach my $campaign (keys %campaignId) {
-  print "Campaign $campaign --- "  unless $cronMode;
+  print "Campaign $campaign --- "  unless $verbose<1;
   my $id = $campaignId{$campaign};
   my $url = "https://api.mobilize.us/v1/organizations/$id/events?timeslot_start=gte_now&per_page=100&organization_id=$id";
 
@@ -156,7 +153,7 @@ foreach my $campaign (keys %campaignId) {
     }
   }
   print "loaded $loaded event", ($loaded == 1 ? "" : "s"), "\n"
-      unless $cronMode;
+      unless $verbose<1;
 }
 
 if (%unknownEvents > 0) {
@@ -167,7 +164,7 @@ if (%unknownEvents > 0) {
     print "- https://mobilize.us/$org/event/$event/\t$title\n";
   }
 } else {
-  print "\nAll active Mobilize events addressed.\n"  unless $cronMode;
+  print "\nAll active Mobilize events addressed.\n"  unless $verbose<1;
 }
 
 if (%unlisted > 0) {
@@ -179,5 +176,5 @@ if (%unlisted > 0) {
   }
 } else {
   print "\nNo calendar events with suspected broken links.\n"
-      unless $cronMode;
+      unless $verbose<1;
 }
