@@ -30,7 +30,10 @@ use Time::HiRes qw(sleep);
 use Time::Local qw(timegm);
 use Getopt::Long;
 
-### The Mobilize codes of the campaigns to follow.
+our $VERSION = 'v0.1.0';
+
+# =====================================================================
+
 my @targetCampaigns = qw();   # Slugs to look up.
 my $mobilizeCallPause = 1.3;  # Seconds between calls to Mobilize.
 my $noComments = 0;           # Suppress generation of Perl comments.
