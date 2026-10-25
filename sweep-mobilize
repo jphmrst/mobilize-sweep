@@ -125,13 +125,22 @@ close CAL;
 my %reported = ();
 my %unknownEvents = ();
 foreach my $campaign (keys %campaignId) {
-  print "Campaign $campaign --- "  unless $verbose<1;
+  if ($verbose>0) {
+    print "Mobilize organization $campaign";
+    print ($verbose>1 ? "\n" : " --- ");
+  }
   my $id = $campaignId{$campaign};
-  my $url = "https://api.mobilize.us/v1/organizations/$id/events?timeslot_start=gte_now&per_page=100&organization_id=$id";
 
+  ## POSSIBLE TODO --- verify that the ID and slug correspond to each
+  ## other.
+
+  ## Loop for loading events.  We load 100 events at a time, so in
+  ## some cases we will need multiple GETs.
   my $loaded = 0;
+  my $url = "https://api.mobilize.us/v1/organizations/$id/events?timeslot_start=gte_now&per_page=100&organization_id=$id";
   while (defined $url) {
     # Fetch the HTML source code
+    print "- Fetching from $url\n"  if $verbose>3;
     my $response = $ua->get($url);
     sleep($mobilizeCallPause);
 
@@ -155,8 +164,10 @@ foreach my $campaign (keys %campaignId) {
       $url = undef;
     }
   }
-  print "loaded $loaded event", ($loaded == 1 ? "" : "s"), "\n"
-      unless $verbose<1;
+  if ($verbose>0) {
+    print ($verbose>1 ? "- L" : "l");
+    print "oaded $loaded event", ($loaded == 1 ? "" : "s"), "\n";
+  }
 }
 
 if (%unknownEvents > 0) {
