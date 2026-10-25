@@ -131,9 +131,6 @@ foreach my $campaign (keys %campaignId) {
   }
   my $id = $campaignId{$campaign};
 
-  ## POSSIBLE TODO --- verify that the ID and slug correspond to each
-  ## other.
-
   ## Loop for loading events.  We load 100 events at a time, so in
   ## some cases we will need multiple GETs.
   my $loaded = 0;
