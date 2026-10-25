@@ -91,6 +91,14 @@ both
 	^(?<header>[A-Za-z]+day,.*)\$
 	```
 
+- `--calendar-event-title-regex=REGEX`
+
+  This argument specifies a (suitably quoted) Perl regular expression
+  for finding event titles in the local calendar file.  When found,
+  the event title will be reported when an unreported Mobilize link is
+  referenced from a calendar event.  By default this argument is not
+  defined.
+
 - `--verbose=NUM`
 
   Set the level of detail in the program's output.  `NUM` should be an

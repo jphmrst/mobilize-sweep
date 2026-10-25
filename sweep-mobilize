@@ -24,6 +24,7 @@ use warnings;
 # along with this program. If not, see <https://gnu.org>.
 # =====================================================================
 
+use v5.36;
 use LWP::Simple qw(get);
 use LWP::UserAgent;
 use JSON::PP;
@@ -64,6 +65,10 @@ my $sectionHeaderRegex = "^(?<header>[A-Za-z]+day,.*)\$";
 # Regular expression (suitably quoted) for section headers in the
 # source file.  Should give the text of the header the name "header".
 
+my $calendarEventTitleRegex = undef;
+# Optional regular expression for finding an event's title in a
+# calendar text file.
+
 my $verbose = 1; # Set the level of output detail.
 
 GetOptions(
@@ -75,11 +80,13 @@ GetOptions(
   "default-section-header=s" => \$defaultHeadline,
   "mobilize-link-regex=s" => \$eventLinkRegex,
   "section-header-regex=s" => \$sectionHeaderRegex,
+  "calendar-event-title-regex=s" => \$calendarEventTitleRegex,
   "verbose=i" => \$verbose
     );
 
 die "Must provide a --source file" unless -e $sourceFile;
 die "--source file not readable"   unless -r $sourceFile;
+atVerbPrint(4, "Verbosity $verbose\n");
 
 ### Create user agent
 my $ua = LWP::UserAgent->new;
@@ -113,6 +120,11 @@ while ($_ = <CAL>) {
     push @{$campaignEvents{$org}}, $id;
     if (!$allowNotFounds{$id}) {
       $unlisted{$id}{org} = $org;
+      if (defined $calendarEventTitleRegex) {
+        if (m|$calendarEventTitleRegex|) {
+          $unlisted{$id}{title} = $+{title};
+        }
+      }
       push @{$unlisted{$id}{date}}, $dateline;
     }
   } elsif (/$sectionHeaderRegex/) {
@@ -125,10 +137,10 @@ close CAL;
 my %reported = ();
 my %unknownEvents = ();
 foreach my $campaign (keys %campaignId) {
-  if ($verbose>0) {
+  atVerb(1, sub {
     print "Mobilize organization $campaign";
     print ($verbose>1 ? "\n" : " --- ");
-  }
+  });
   my $id = $campaignId{$campaign};
 
   ## Loop for loading events.  We load 100 events at a time, so in
@@ -137,7 +149,7 @@ foreach my $campaign (keys %campaignId) {
   my $url = "https://api.mobilize.us/v1/organizations/$id/events?timeslot_start=gte_now&per_page=100&organization_id=$id";
   while (defined $url) {
     # Fetch the HTML source code
-    print "- Fetching from $url\n"  if $verbose>3;
+    atVerbPrint(4, "- Fetching from $url\n");
     my $response = $ua->get($url);
     sleep($mobilizeCallPause);
 
@@ -161,10 +173,10 @@ foreach my $campaign (keys %campaignId) {
       $url = undef;
     }
   }
-  if ($verbose>0) {
+  atVerb(1, sub {
     print ($verbose>1 ? "- L" : "l");
     print "oaded $loaded event", ($loaded == 1 ? "" : "s"), "\n";
-  }
+         });
 }
 
 if (%unknownEvents > 0) {
@@ -175,18 +187,36 @@ if (%unknownEvents > 0) {
     print "- https://mobilize.us/$org/event/$event/\t$title\n";
   }
 } else {
-  print "\nAll active Mobilize events addressed.\n"  unless $verbose<1;
+  atVerbPrint(1, "\nAll active Mobilize events addressed.\n");
 }
 
 if (%unlisted > 0) {
   print "\nIn calendar but not returned from Mobilize:\n";
   foreach my $event (keys %unlisted) {
     my $org = $unlisted{$event}{org};
+    my $title = $unlisted{$event}{title};
     my $dates = $unlisted{$event}{date};
-    print "- https://mobilize.us/$org/event/$event/\t[",
-        join("; ", @$dates), "]\n";
+    if (defined $title) {
+      print "- $title\n  https://mobilize.us/$org/event/$event/\n  [",
+          join("; ", @$dates), "]\n";
+    } else {
+      print "- https://mobilize.us/$org/event/$event/\t[",
+          join("; ", @$dates), "]\n";
+    }
   }
 } else {
-  print "\nNo calendar events with suspected broken links.\n"
-      unless $verbose<1;
+  atVerbPrint(1,
+              "\nNo calendar events with suspected broken links.\n");
+}
+
+exit 0;
+
+sub atVerb ($min, $code) {
+  if ($verbose >= $min) {
+    $code->();
+  }
+}
+
+sub atVerbPrint ($min, $str) {
+  atVerb($min, sub { print $str; });
 }
