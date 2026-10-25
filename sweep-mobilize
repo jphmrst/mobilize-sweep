@@ -170,9 +170,9 @@ if (%unknownEvents > 0) {
 if (%unlisted > 0) {
   print "\nIn calendar but not returned from Mobilize:\n";
   foreach my $event (keys %unlisted) {
-  my $org = $unlisted{$event}{org};
-  my $dates = $unlisted{$event}{date};
-  print "- https://mobilize.us/$org/event/$event/\t[", join("; ", @$dates), "]\n";
+    my $org = $unlisted{$event}{org};
+    my $dates = $unlisted{$event}{date};
+    print "- https://mobilize.us/$org/event/$event/\t[", join("; ", @$dates), "]\n";
   }
 } else {
   print "\nNo calendar events with suspected broken links.\n"
