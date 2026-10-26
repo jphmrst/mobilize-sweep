@@ -1,6 +1,4 @@
 #!/usr/bin/env perl
-use strict;
-use warnings;
 
 # =====================================================================
 # Program Name: sweep-mobilize
@@ -24,6 +22,8 @@ use warnings;
 # along with this program. If not, see <https://gnu.org>.
 # =====================================================================
 
+use strict;
+use warnings;
 use v5.36;
 use LWP::Simple qw(get);
 use LWP::UserAgent;
@@ -36,6 +36,12 @@ our $VERSION = 'v0.1.0';
 $| = 1; # Immediately flush STDOUT
 
 # =====================================================================
+# Extract information from command-line arguments
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# Initialize storage
+# ---------------------------------------------------------------------
 
 my %campaignId = ();          # For the Mobilize codes of the
                               # campaigns we follow.
@@ -71,6 +77,10 @@ my $calendarEventTitleRegex = undef;
 
 my $verbose = 1; # Set the level of output detail.
 
+# ---------------------------------------------------------------------
+# Actual extraction of command-line arguments.
+# ---------------------------------------------------------------------
+
 GetOptions(
   "source=s" => \$sourceFile,
   "mobilize=s" => \%campaignId,
@@ -84,28 +94,36 @@ GetOptions(
   "verbose=i" => \$verbose
     );
 
+# ---------------------------------------------------------------------
+# Check for required information
+# ---------------------------------------------------------------------
+
 die "Must provide a --source file" unless -e $sourceFile;
 die "--source file not readable"   unless -r $sourceFile;
 atVerbPrint(4, "Verbosity $verbose\n");
 
-### Create user agent
-my $ua = LWP::UserAgent->new;
-$ua->agent("PerlAPIClient/1.0");
+# ---------------------------------------------------------------------
+# Extract structured information
+# ---------------------------------------------------------------------
 
-### Process event IDs to ignore
+### Build a lookup table of event IDs to be ignored.
 my %ignoreID = ();
 foreach my $id (@ignoreIDs) {
   $ignoreID{$id} = 1;
 }
 
-### Process IDs OK to have on the calendar even though we do not
-### expect to find them on Mobilize.
+### Build a lookup table of the event IDs which are OK to have on the
+### calendar even though we do not expect to find them on Mobilize.
 my %allowNotFounds = ();
 foreach my $id (@allowNotFound) {
   $allowNotFounds{$id} = 1;
 }
 
-### Sweep through $sourceFile for the events we already have
+# =====================================================================
+# Sweep through the local text file for the events which it already
+# contains
+# =====================================================================
+
 my %knownEvents = ();
 my %campaignEvents = ();
 my %unlisted = ();
@@ -133,9 +151,19 @@ while ($_ = <CAL>) {
 }
 close CAL;
 
-### Go through each target campaign to find interesting URLs.
+# =====================================================================
+# Download event lists from Mobilize organizations
+# =====================================================================
+
+### Create user agent
+my $ua = LWP::UserAgent->new;
+$ua->agent("PerlAPIClient/1.0");
+
+### Set up storage where we will log problems.
 my %reported = ();
 my %unknownEvents = ();
+
+### Go through each target campaign to find interesting URLs.
 foreach my $campaign (keys %campaignId) {
   atVerb(1, sub {
     print "Mobilize organization $campaign";
@@ -189,6 +217,10 @@ foreach my $campaign (keys %campaignId) {
          });
 }
 
+# =====================================================================
+# Report any issues found
+# =====================================================================
+
 if (%unknownEvents > 0) {
   print "\nActive on Mobilize but not on calendar:\n";
   foreach my $event (keys %unknownEvents) {
@@ -220,6 +252,10 @@ if (%unlisted > 0) {
 }
 
 exit 0;
+
+# =====================================================================
+# Verbosity helpers
+# =====================================================================
 
 sub atVerb ($min, $code) {
   if ($verbose >= $min) {
