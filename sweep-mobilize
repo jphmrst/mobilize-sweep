@@ -153,9 +153,10 @@ foreach my $campaign (keys %campaignId) {
     my $response = $ua->get($url);
     sleep($mobilizeCallPause);
 
+    my $json_text = $response->decoded_content;
+    my $result = decode_json($json_text);
+
     if ($response->is_success) {
-      my $json_text = $response->decoded_content;
-      my $result = decode_json($json_text);
       $url = $result->{next};
       my $records = $result->{data};
       $loaded += 1+$#{$records};
@@ -170,6 +171,15 @@ foreach my $campaign (keys %campaignId) {
         $unknownEvents{$eventId}{org} = $campaign;
       }
     } else {
+      my $posterror = $verbose == 1 ? "\n- " : ": ";
+      my $nextline = $verbose == 1 ? "\n  " : "\n- ";
+      print "ERROR${posterror}Read failed for $url";
+      print $nextline, $result->{error}{detail}
+      if defined $result
+          && defined $result->{error}
+          && defined $result->{error}{detail}
+          && !(defined $result->{data});
+      print "${nextline}Skipping input for $campaign\n";
       $url = undef;
     }
   }
