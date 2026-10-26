@@ -32,7 +32,7 @@ use Time::HiRes qw( sleep );
 use Time::Local qw(timegm);
 use Getopt::Long;
 
-our $VERSION = 'v0.1.0';
+our $VERSION = 'v0.1.1';
 $| = 1; # Immediately flush STDOUT
 
 # =====================================================================
