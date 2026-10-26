@@ -1,6 +1,15 @@
 # mobilize-sweep
 Command-line scripts comparing Mobilize event lists to a local calendar.
 
+These scripts are intended for maintainers of calendars which draw
+from multiple sources including Mobilize events.  It can be tedious to
+notice when new events are created by an organization in Mobilize, or
+when a Mobilize event is cancelled.  The scripts in this repository
+allow the calendar maintainers to automate comparing a local calendar
+file to the event lists of designated organizations on Mobilize.  The
+main script will then report discrepancies which may require the
+maintainers' attention.
+
 ## The `sweep-mobilize` script
 
 This script is the primary tool of this repository.  It compares a
