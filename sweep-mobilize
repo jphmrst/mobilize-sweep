@@ -175,16 +175,26 @@ foreach my $campaign (keys %campaignId) {
   ## some cases we will need multiple GETs.
   my $loaded = 0;
   my $url = "https://api.mobilize.us/v1/organizations/$id/events?timeslot_start=gte_now&per_page=100&organization_id=$id";
+
   while (defined $url) {
-    # Fetch the HTML source code
+    # Query the Mobilize server
     atVerbPrint(4, "- Fetching from $url\n");
     my $response = $ua->get($url);
     sleep($mobilizeCallPause);
 
-    my $json_text = $response->decoded_content;
-    my $result = decode_json($json_text);
+    # Unpack the server call response.
+    my $json_text;
+    my $result = {};
+    my $isSuccess = 0;
+    if (defined $response) {
+      $isSuccess = $response->is_success;
+      $json_text = $response->decoded_content;
+      $result = decode_json($json_text);
+    }
 
-    if ($response->is_success) {
+    # File away the information retrieved, or else flag any issues
+    # with the server call.
+    if ($isSuccess) {
       $url = $result->{next};
       my $records = $result->{data};
       $loaded += 1+$#{$records};
@@ -211,6 +221,8 @@ foreach my $campaign (keys %campaignId) {
       $url = undef;
     }
   }
+
+  # Any outgoing message.
   atVerb(1, sub {
     print ($verbose>1 ? "- L" : "l");
     print "oaded $loaded event", ($loaded == 1 ? "" : "s"), "\n";
@@ -221,6 +233,9 @@ foreach my $campaign (keys %campaignId) {
 # Report any issues found
 # =====================================================================
 
+# The %unknownEvents table records events which one of the Mobilize
+# organizations lists, but which the calendar does not reference.
+#
 if (%unknownEvents > 0) {
   print "\nActive on Mobilize but not on calendar:\n";
   foreach my $event (keys %unknownEvents) {
@@ -232,6 +247,9 @@ if (%unknownEvents > 0) {
   atVerbPrint(1, "\nAll active Mobilize events addressed.\n");
 }
 
+# The %unlisted table records events referenced in the calendar, but
+# which none of the Mobilize organizations list.
+#
 if (%unlisted > 0) {
   print "\nIn calendar but not returned from Mobilize:\n";
   foreach my $event (keys %unlisted) {
