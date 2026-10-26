@@ -124,7 +124,7 @@ both
 
 ```
 sweep-mobilize \
-	--source=cal.org \
+	--source=cal.txt \
 	--mobilize dfl=617 \
 	--mobilize ilhanomar=2754 \
 	--mobilize keithellison=13798 \
