@@ -176,6 +176,13 @@ foreach my $campaign (keys %campaignId) {
   my $loaded = 0;
   my $url = "https://api.mobilize.us/v1/organizations/$id/events?timeslot_start=gte_now&per_page=100&organization_id=$id";
 
+  ## We report certain extra diagnostic failures only the first time
+  ## we see them.
+  my $firstSlugMismatch = 1;
+
+  ## Formatting helper.
+  my $showedDiagnostics = 0;
+
   while (defined $url) {
     # Query the Mobilize server
     atVerbPrint(4, "- Fetching from $url\n");
@@ -204,6 +211,18 @@ foreach my $campaign (keys %campaignId) {
         $reported{$eventId} = 1;
         delete $unlisted{$eventId};
         # print "- https://mobilize.us/$campaign/event/$eventId/\n";
+
+          my $slug = $rec->{sponsor}{slug};
+          if ($slug ne $campaign && $firstSlugMismatch) {
+            my $posterror = $verbose == 1 ? "\n- " : ": ";
+            my $nextline = $verbose == 1 ? "\n  " : "\n- ";
+            print "WARNING${posterror}Event slug $slug does not match $campaign${nextline}URL ", $rec->{browser_url};
+            $showedDiagnostics = 1;
+
+            # Don't report this failure again for this organization.
+            $firstSlugMismatch = 0;
+          }
+
         next FOUND if $ignoreID{$eventId} || $knownEvents{$eventId};
         $unknownEvents{$eventId}{title} = $rec->{title};
         $unknownEvents{$eventId}{org} = $campaign;
@@ -217,14 +236,17 @@ foreach my $campaign (keys %campaignId) {
           && defined $result->{error}
           && defined $result->{error}{detail}
           && !(defined $result->{data});
-      print "${nextline}Skipping input for $campaign\n";
+      $showedDiagnostics = 1;
+
+      print "${nextline}Skipping further input for $campaign\n";
       $url = undef;
     }
   }
 
   # Any outgoing message.
   atVerb(1, sub {
-    print ($verbose>1 ? "- L" : "l");
+    print "\n"  if $showedDiagnostics;
+    print ($verbose>1 || $showedDiagnostics ? "- L" : "l");
     print "oaded $loaded event", ($loaded == 1 ? "" : "s"), "\n";
          });
 }
